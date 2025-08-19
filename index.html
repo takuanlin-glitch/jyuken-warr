@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<title>受験戦争</title>
+<style>
+  :root { --accent:#b22222; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui, sans-serif;background:#000;color:#fff;text-align:center}
+  h1,h2,h3{text-shadow:2px 2px 4px #000;margin:0 0 12px}
+  button{cursor:pointer;border:none;border-radius:10px;padding:12px 18px;font-size:16px}
+  .primary{background:var(--accent);color:#fff}
+  .primary:hover{background:#e03a3a}
+  .ghost{background:transparent;border:2px solid #fff;color:#fff}
+  .muted{color:#bbb}
+
+  .screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  .screen.active{display:flex}
+  .bg{background:url("home.jpg") center/cover no-repeat;flex-direction:column;gap:16px}
+  .card{background:rgba(20,20,20,.85);backdrop-filter:blur(2px);border:1px solid #333;border-radius:16px;padding:20px;max-width:820px;width:92%;margin:auto}
+  .row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+  .choice{border:3px solid transparent;border-radius:14px;padding:8px 10px;background:#111}
+  .choice.selected{border-color:yellow}
+  .choice img{width:120px;height:120px;border-radius:12px;object-fit:cover;display:block;margin:auto}
+  .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px}
+  .tile{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:18px}
+  .avatar{width:120px;height:120px;border-radius:12px;object-fit:cover;border:3px solid #444;margin-top:8px}
+  .note{color:#ccc;font-size:12px;margin-top:6px}
+  .stat{display:grid;grid-template-columns:120px 1fr auto auto;align-items:center;gap:8px;padding:10px;background:#0f0f0f;border:1px solid #222;border-radius:10px}
+  .bar{height:12px;background:#222;border-radius:8px;overflow:hidden}
+  .fill{height:100%;background:#31c48d}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#1b1b1b;border:1px solid #2a2a2a}
+</style>
+
+<body>
+
+<!-- ① タイトル -->
+<section id="title" class="screen bg active">
+  <h1>受験戦争へようこそ</h1>
+  <button class="primary" onclick="go('character')">ゲーム開始！</button>
+</section>
+
+<!-- ② キャラ作成 -->
+<section id="character" class="screen">
+  <div class="card">
+    <h2>キャラ作成</h2>
+    <p>プレイヤー名を入力</p>
+    <input id="playerName" placeholder="たくちゃん" style="padding:10px;border-radius:8px;border:none;width:260px">
+    <p style="margin-top:16px">キャラを選択</p>
+    <div class="row">
+      <div class="choice" onclick="selectChar('boy', this)">
+        <img src="boy.png" alt="男の子"><div>男の子</div>
+      </div>
+      <div class="choice" onclick="selectChar('girl', this)">
+        <img src="girl.png" alt="女の子"><div>女の子</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:18px">
+      <button class="ghost" onclick="go('title')">戻る</button>
+      <button class="primary" onclick="saveAndGoMain()">決定！</button>
+    </div>
+    <div class="note">※ いまは端末内に保存（localStorage）</div>
+  </div>
+</section>
+
+<!-- ③ メイン画面 -->
+<section id="main" class="screen">
+  <div class="card">
+    <h2>本部（ホーム）</h2>
+    <div class="row" style="align-items:center;gap:24px;justify-content:center">
+      <div>
+        <div id="hello" style="font-size:18px;margin-bottom:6px">ようこそ！</div>
+        <img id="avatarImg" class="avatar" src="" alt="アバター">
+      </div>
+      <div style="text-align:left">
+        <div><b>ランク：</b><span id="rank">F</span></div>
+        <div><b>経験値：</b><span id="xp">0</span></div>
+        <div><b>SP（強化ポイント）：</b><span id="sp" class="pill">0</span></div>
+      </div>
+    </div>
+
+    <div class="menu">
+      <div class="tile">
+        <h3>特訓</h3>
+        <p class="note">（あとで実装：クイズでXP/SP獲得）</p>
+        <button class="primary" onclick="alert('次回実装：特訓クイズ')">はじめる</button>
+      </div>
+      <div class="tile">
+        <h3>強化</h3>
+        <p class="note">SPでステータスを成長</p>
+        <button class="primary" onclick="go('upgrade')">開く</button>
+      </div>
+      <div class="tile">
+        <h3>ショップ</h3>
+        <p class="note">着せ替えやアイテム（後日）</p>
+        <button class="primary" onclick="alert('次回実装：ショップ')">入る</button>
+      </div>
+      <div class="tile">
+        <h3>プロフィール</h3>
+        <p class="note">名前や見た目を変更</p>
+        <button class="primary" onclick="go('character')">編集</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:18px">
+      <button class="ghost" onclick="resetAll()">最初からやり直す</button>
+    </div>
+  </div>
+</section>
+
+<!-- ④ 強化画面 -->
+<section id="upgrade" class="screen">
+  <div class="card" style="text-align:left">
+    <h2 style="text-align:center">強化</h2>
+    <p class="muted" style="text-align:center">SP（強化ポイント）を振り分けて能力を伸ばそう。</p>
+    <div class="row" style="justify-content:space-between">
+      <div class="pill">所持SP：<b id="spHere">0</b></div>
+      <div class="pill">総合力：<b id="power">0</b></div>
+    </div>
+
+    <div id="stats" style="margin-top:14px;display:grid;gap:10px">
+      <!-- 各ステータス行はJSで描画 -->
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <button class="ghost" onclick="go('main')">ホームへ戻る</button>
+      <button class="primary" onclick="applyUpgrade()">保存して反映</button>
+    </div>
+    <div class="note" style="text-align:center">※ お試しで最初にSPを3配布しています。特訓実装後はクイズで入手できます。</div>
+  </div>
+</section>
+
+<script>
+  const KEY = 'playerData';
+  let chosenChar = null;
+
+  // 画面切替
+  function go(id){
+    document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // キャラ作成
+  function selectChar(type, el){
+    chosenChar = type;
+    document.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function saveAndGoMain(){
+    const name = (document.getElementById('playerName').value || '名無し').trim();
+    if(!chosenChar){ alert('キャラを選んでね！'); return; }
+    const data = {
+      name, char: chosenChar,
+      xp: 0, rank: 'F',
+      sp: 3,                                   // 初期SP（お試し）
+      stats: { focus: 1, stamina: 1, knowledge: 1 } // 初期ステ
+    };
+    localStorage.setItem(KEY, JSON.stringify(data));
+    renderMain(data);
+    go('main');
+  }
+
+  // メイン描画
+  function renderMain(data){
+    document.getElementById('hello').textContent = `${data.name} さん、ようこそ！`;
+    document.getElementById('avatarImg').src = data.char === 'girl' ? 'girl.png' : 'boy.png';
+    document.getElementById('xp').textContent = data.xp ?? 0;
+    document.getElementById('rank').textContent = data.rank ?? 'F';
+    document.getElementById('sp').textContent = data.sp ?? 0;
+  }
+
+  // 強化画面 -------------------------
+  const UCONF = [
+    { key:'focus',     label:'集中力',  color:'#60a5fa' },
+    { key:'stamina',   label:'体力',    color:'#f59e0b' },
+    { key:'knowledge', label:'知識',    color:'#34d399' },
+  ];
+
+  let pending = {}; // 変更案（画面内で一時的に持つ）
+
+  function renderUpgrade(){
+    const data = getData();
+    const sp = data.sp ?? 0;
+    document.getElementById('spHere').textContent = sp;
+    const power = data.stats.focus + data.stats.stamina + data.stats.knowledge;
+    document.getElementById('power').textContent = power;
+
+    const wrap = document.getElementById('stats');
+    wrap.innerHTML = '';
+    UCONF.forEach(cfg=>{
+      const current = (pending[cfg.key] ?? data.stats[cfg.key]);
+      const pct = Math.min(100, current*10); // 表示用(最大10想定)
+      const row = document.createElement('div');
+      row.className = 'stat';
+      row.innerHTML = `
+        <div>${cfg.label}</div>
+        <div class="bar"><div class="fill" style="width:${pct}%;background:${cfg.color}"></div></div>
+        <button class="ghost" data-k="${cfg.key}" data-d="-1">－</button>
+        <button class="primary" data-k="${cfg.key}" data-d="1">＋</button>
+      `;
+      wrap.appendChild(row);
+    });
+
+    // ボタンイベント
+    wrap.querySelectorAll('button').forEach(btn=>{
+      btn.onclick = ()=>{
+        const k = btn.getAttribute('data-k');
+        const d = Number(btn.getAttribute('data-d'));
+        const baseStats = getData().stats;
+        const cur = (pending[k] ?? baseStats[k]);
+        // 使用予定SPの計算
+        const used = totalPendingSP();
+        if(d>0 && used >= (getData().sp ?? 0)) return alert('SPが足りないよ！');
+        const next = Math.max(1, Math.min(10, cur + d)); // 1〜10に制限
+        pending[k] = next;
+        renderUpgrade(); // 再描画
+      };
+    });
+  }
+
+  function totalPendingSP(){
+    const data = getData();
+    let use = 0;
+    UCONF.forEach(cfg=>{
+      const cur = data.stats[cfg.key];
+      const nxt = pending[cfg.key] ?? cur;
+      use += Math.max(0, (nxt - cur));
+    });
+    return use;
+  }
+
+  function applyUpgrade(){
+    const data = getData();
+    const need = totalPendingSP();
+    if(need > (data.sp ?? 0)) return alert('SPが足りないよ！');
+    // 反映
+    UCONF.forEach(cfg=>{
+      data.stats[cfg.key] = pending[cfg.key] ?? data.stats[cfg.key];
+    });
+    data.sp = (data.sp ?? 0) - need;
+    pending = {};
+    saveData(data);
+    alert('強化を反映したよ！');
+    renderMain(data);
+    renderUpgrade();
+  }
+
+  // 共有ユーティリティ
+  function getData(){
+    return JSON.parse(localStorage.getItem(KEY) || 'null');
+  }
+  function saveData(d){
+    localStorage.setItem(KEY, JSON.stringify(d));
+  }
+
+  // 起動時：保存データがあればメインへ
+  (function init(){
+    const saved = getData();
+    if(saved){
+      renderMain(saved);
+      go('main');
+    }else{
+      go('title');
+    }
+    // 強化画面へ入るたびに描画するようにフック
+    document.querySelector('button.primary[onclick="go(\'upgrade\')"]')?.addEventListener('click', ()=>{
+      pending = {}; // リセット
+      renderUpgrade();
+    });
+  })();
+
+  // リセット
+  function resetAll(){
+    if(confirm('本当に最初からやり直しますか？')){
+      localStorage.removeItem(KEY);
+      chosenChar = null;
+      document.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
+      document.getElementById('playerName').value = '';
+      go('title');
+    }
+  }
+</script>
+</body>
+</html>
