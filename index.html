@@ -16,7 +16,7 @@
   .screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px}
   .screen.active{display:flex}
   .bg{background:url("home.jpg") center/cover no-repeat;flex-direction:column;gap:16px}
-  .card{background:rgba(20,20,20,.85);backdrop-filter:blur(2px);border:1px solid #333;border-radius:16px;padding:20px;max-width:820px;width:92%;margin:auto}
+  .card{background:rgba(20,20,20,.85);backdrop-filter:blur(2px);border:1px solid #333;border-radius:16px;padding:20px;max-width:860px;width:92%;margin:auto}
   .row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px}
   .choice{border:3px solid transparent;border-radius:14px;padding:8px 10px;background:#111}
   .choice.selected{border-color:yellow}
@@ -25,10 +25,15 @@
   .tile{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:18px}
   .avatar{width:120px;height:120px;border-radius:12px;object-fit:cover;border:3px solid #444;margin-top:8px}
   .note{color:#ccc;font-size:12px;margin-top:6px}
-  .stat{display:grid;grid-template-columns:120px 1fr auto auto;align-items:center;gap:8px;padding:10px;background:#0f0f0f;border:1px solid #222;border-radius:10px}
-  .bar{height:12px;background:#222;border-radius:8px;overflow:hidden}
-  .fill{height:100%;background:#31c48d}
-  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#1b1b1b;border:1px solid #2a2a2a}
+  input,select{padding:10px;border-radius:8px;border:none}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  td,th{border-bottom:1px solid #2a2a2a;padding:8px;text-align:left}
+
+  /* グラフ（強化画面を置き換え） */
+  .stat{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:8px;
+        padding:10px;background:#0f0f0f;border:1px solid #222;border-radius:10px}
+  .bar{height:14px;background:#222;border-radius:8px;overflow:hidden}
+  .fill{height:100%}
 </style>
 
 <body>
@@ -44,7 +49,7 @@
   <div class="card">
     <h2>キャラ作成</h2>
     <p>プレイヤー名を入力</p>
-    <input id="playerName" placeholder="たくちゃん" style="padding:10px;border-radius:8px;border:none;width:260px">
+    <input id="playerName" placeholder="たくちゃん" style="width:260px">
     <p style="margin-top:16px">キャラを選択</p>
     <div class="row">
       <div class="choice" onclick="selectChar('boy', this)">
@@ -73,26 +78,26 @@
       </div>
       <div style="text-align:left">
         <div><b>ランク：</b><span id="rank">F</span></div>
-        <div><b>経験値：</b><span id="xp">0</span></div>
-        <div><b>SP（強化ポイント）：</b><span id="sp" class="pill">0</span></div>
+        <div><b>経験値（累計分）：</b><span id="xp" class="pill">0</span></div>
+        <div><b>今日の勉強：</b><span id="todayTotal" class="pill">0分</span></div>
       </div>
     </div>
 
     <div class="menu">
       <div class="tile">
         <h3>特訓</h3>
-        <p class="note">（あとで実装：クイズでXP/SP獲得）</p>
+        <p class="note">（あとで実装：クイズでXPを獲得）</p>
         <button class="primary" onclick="alert('次回実装：特訓クイズ')">はじめる</button>
       </div>
       <div class="tile">
-        <h3>強化</h3>
-        <p class="note">SPでステータスを成長</p>
-        <button class="primary" onclick="go('upgrade')">開く</button>
+        <h3>学習記録</h3>
+        <p class="note">分数を入力して保存</p>
+        <button class="primary" onclick="goLog()">記録する</button>
       </div>
       <div class="tile">
-        <h3>ショップ</h3>
-        <p class="note">着せ替えやアイテム（後日）</p>
-        <button class="primary" onclick="alert('次回実装：ショップ')">入る</button>
+        <h3>学習グラフ</h3>
+        <p class="note">教科ごとの累計を可視化</p>
+        <button class="primary" onclick="go('stats')">見る</button>
       </div>
       <div class="tile">
         <h3>プロフィール</h3>
@@ -107,172 +112,182 @@
   </div>
 </section>
 
-<!-- ④ 強化画面 -->
-<section id="upgrade" class="screen">
+<!-- ④ 学習記録 -->
+<section id="log" class="screen">
   <div class="card" style="text-align:left">
-    <h2 style="text-align:center">強化</h2>
-    <p class="muted" style="text-align:center">SP（強化ポイント）を振り分けて能力を伸ばそう。</p>
-    <div class="row" style="justify-content:space-between">
-      <div class="pill">所持SP：<b id="spHere">0</b></div>
-      <div class="pill">総合力：<b id="power">0</b></div>
+    <h2 style="text-align:center">学習記録</h2>
+    <div class="row">
+      <label>教科
+        <select id="subject">
+          <option>英語</option><option>数学</option><option>国語</option><option>理科</option><option>社会</option>
+        </select>
+      </label>
+      <label>分数
+        <input id="minutes" type="number" min="1" value="30" style="width:120px">
+      </label>
+      <button class="primary" onclick="addStudy()">保存</button>
+      <button class="ghost" onclick="go('main')">ホームへ</button>
     </div>
 
-    <div id="stats" style="margin-top:14px;display:grid;gap:10px">
-      <!-- 各ステータス行はJSで描画 -->
-    </div>
+    <h3 style="margin-top:16px">今日の合計：<span id="todayTotal2">0分</span></h3>
+    <table id="logTable">
+      <thead><tr><th>日時</th><th>教科</th><th>分</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="note">※ データはこの端末に保存されます。</div>
+  </div>
+</section>
 
+<!-- ⑤ 学習グラフ（元・強化画面） -->
+<section id="stats" class="screen">
+  <div class="card" style="text-align:left">
+    <h2 style="text-align:center">学習グラフ（教科別）</h2>
+    <p class="muted" style="text-align:center">累計学習時間（分）を可視化。バーの長さ＝各教科の累計分。</p>
+    <div id="statsWrap" style="margin-top:14px;display:grid;gap:10px"></div>
     <div class="row" style="margin-top:16px">
       <button class="ghost" onclick="go('main')">ホームへ戻る</button>
-      <button class="primary" onclick="applyUpgrade()">保存して反映</button>
     </div>
-    <div class="note" style="text-align:center">※ お試しで最初にSPを3配布しています。特訓実装後はクイズで入手できます。</div>
   </div>
 </section>
 
 <script>
   const KEY = 'playerData';
+  const LOG_KEY = 'studyLogs';
   let chosenChar = null;
+  const SUBJECTS = ['英語','数学','国語','理科','社会'];
+  const COLORS = { 英語:'#60a5fa', 数学:'#f59e0b', 国語:'#34d399', 理科:'#ef4444', 社会:'#a78bfa' };
 
-  // 画面切替
+  /* 画面切替 */
   function go(id){
     document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    if(id==='main'){ updateTodayTotal(); }
+    if(id==='log'){ renderLog(); }
+    if(id==='stats'){ renderStats(); }
   }
+  function goLog(){ renderLog(); go('log'); }
 
-  // キャラ作成
+  /* キャラ作成 */
   function selectChar(type, el){
     chosenChar = type;
     document.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
   }
-
   function saveAndGoMain(){
     const name = (document.getElementById('playerName').value || '名無し').trim();
     if(!chosenChar){ alert('キャラを選んでね！'); return; }
-    const data = {
-      name, char: chosenChar,
-      xp: 0, rank: 'F',
-      sp: 3,                                   // 初期SP（お試し）
-      stats: { focus: 1, stamina: 1, knowledge: 1 } // 初期ステ
-    };
+    const data = { name, char: chosenChar, xp: 0, rank: 'F' };
     localStorage.setItem(KEY, JSON.stringify(data));
     renderMain(data);
     go('main');
   }
 
-  // メイン描画
+  /* メイン描画 */
   function renderMain(data){
     document.getElementById('hello').textContent = `${data.name} さん、ようこそ！`;
     document.getElementById('avatarImg').src = data.char === 'girl' ? 'girl.png' : 'boy.png';
     document.getElementById('xp').textContent = data.xp ?? 0;
     document.getElementById('rank').textContent = data.rank ?? 'F';
-    document.getElementById('sp').textContent = data.sp ?? 0;
+    updateTodayTotal();
+  }
+  function updateTodayTotal(){
+    const total = getTodayTotalMinutes();
+    document.getElementById('todayTotal').textContent = total + '分';
   }
 
-  // 強化画面 -------------------------
-  const UCONF = [
-    { key:'focus',     label:'集中力',  color:'#60a5fa' },
-    { key:'stamina',   label:'体力',    color:'#f59e0b' },
-    { key:'knowledge', label:'知識',    color:'#34d399' },
-  ];
+  /* 学習記録 */
+  function addStudy(){
+    const mins = Number(document.getElementById('minutes').value || 0);
+    const subject = document.getElementById('subject').value;
+    if(mins<=0) return alert('分数を1以上で入力してね');
 
-  let pending = {}; // 変更案（画面内で一時的に持つ）
+    // ログ保存
+    const logs = getLogs();
+    logs.push({ ts: Date.now(), subject, mins });
+    saveLogs(logs);
 
-  function renderUpgrade(){
+    // XP加算（1分=1XP）
     const data = getData();
-    const sp = data.sp ?? 0;
-    document.getElementById('spHere').textContent = sp;
-    const power = data.stats.focus + data.stats.stamina + data.stats.knowledge;
-    document.getElementById('power').textContent = power;
+    if(data){
+      data.xp = (data.xp||0) + mins;
+      data.rank = calcRank(data.xp);
+      saveData(data);
+      renderMain(data);
+    }
+    renderLog();
+    alert('記録したよ！（XPも加算）');
+  }
 
-    const wrap = document.getElementById('stats');
+  function renderLog(){
+    const tbody = document.querySelector('#logTable tbody');
+    const logs = getLogs().slice().reverse();
+    tbody.innerHTML = logs.map(l=>{
+      const d = new Date(l.ts);
+      const time = d.toLocaleString();
+      return `<tr><td>${time}</td><td>${l.subject}</td><td>${l.mins}</td></tr>`;
+    }).join('');
+    document.getElementById('todayTotal2').textContent = getTodayTotalMinutes() + '分';
+  }
+
+  function getTodayTotalMinutes(){
+    const logs = getLogs();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const start = +today, end = start + 24*60*60*1000;
+    return logs.filter(l=> l.ts>=start && l.ts<end).reduce((a,b)=>a+b.mins,0);
+  }
+
+  /* 学習グラフ（教科別累計） */
+  function renderStats(){
+    const logs = getLogs();
+    const totals = {};
+    SUBJECTS.forEach(s=>totals[s]=0);
+    logs.forEach(l=> totals[l.subject] = (totals[l.subject]||0) + l.mins);
+    const maxVal = Math.max(1, ...Object.values(totals));
+
+    const wrap = document.getElementById('statsWrap');
     wrap.innerHTML = '';
-    UCONF.forEach(cfg=>{
-      const current = (pending[cfg.key] ?? data.stats[cfg.key]);
-      const pct = Math.min(100, current*10); // 表示用(最大10想定)
+    SUBJECTS.forEach(sub=>{
+      const v = totals[sub];
+      const pct = Math.round((v / maxVal) * 100);
       const row = document.createElement('div');
       row.className = 'stat';
       row.innerHTML = `
-        <div>${cfg.label}</div>
-        <div class="bar"><div class="fill" style="width:${pct}%;background:${cfg.color}"></div></div>
-        <button class="ghost" data-k="${cfg.key}" data-d="-1">－</button>
-        <button class="primary" data-k="${cfg.key}" data-d="1">＋</button>
+        <div>${sub}</div>
+        <div class="bar"><div class="fill" style="width:${pct}%;background:${COLORS[sub]}"></div></div>
+        <div><b>${v}</b> 分</div>
       `;
       wrap.appendChild(row);
     });
-
-    // ボタンイベント
-    wrap.querySelectorAll('button').forEach(btn=>{
-      btn.onclick = ()=>{
-        const k = btn.getAttribute('data-k');
-        const d = Number(btn.getAttribute('data-d'));
-        const baseStats = getData().stats;
-        const cur = (pending[k] ?? baseStats[k]);
-        // 使用予定SPの計算
-        const used = totalPendingSP();
-        if(d>0 && used >= (getData().sp ?? 0)) return alert('SPが足りないよ！');
-        const next = Math.max(1, Math.min(10, cur + d)); // 1〜10に制限
-        pending[k] = next;
-        renderUpgrade(); // 再描画
-      };
-    });
   }
 
-  function totalPendingSP(){
-    const data = getData();
-    let use = 0;
-    UCONF.forEach(cfg=>{
-      const cur = data.stats[cfg.key];
-      const nxt = pending[cfg.key] ?? cur;
-      use += Math.max(0, (nxt - cur));
-    });
-    return use;
+  /* ランク計算（ざっくり） */
+  function calcRank(xp){
+    if(xp>=1500) return 'A';
+    if(xp>=1000) return 'B';
+    if(xp>=600)  return 'C';
+    if(xp>=300)  return 'D';
+    if(xp>=100)  return 'E';
+    return 'F';
   }
 
-  function applyUpgrade(){
-    const data = getData();
-    const need = totalPendingSP();
-    if(need > (data.sp ?? 0)) return alert('SPが足りないよ！');
-    // 反映
-    UCONF.forEach(cfg=>{
-      data.stats[cfg.key] = pending[cfg.key] ?? data.stats[cfg.key];
-    });
-    data.sp = (data.sp ?? 0) - need;
-    pending = {};
-    saveData(data);
-    alert('強化を反映したよ！');
-    renderMain(data);
-    renderUpgrade();
-  }
+  /* データユーティリティ */
+  function getData(){ return JSON.parse(localStorage.getItem(KEY) || 'null'); }
+  function saveData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+  function getLogs(){ return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); }
+  function saveLogs(v){ localStorage.setItem(LOG_KEY, JSON.stringify(v)); }
 
-  // 共有ユーティリティ
-  function getData(){
-    return JSON.parse(localStorage.getItem(KEY) || 'null');
-  }
-  function saveData(d){
-    localStorage.setItem(KEY, JSON.stringify(d));
-  }
-
-  // 起動時：保存データがあればメインへ
+  /* 起動時 */
   (function init(){
     const saved = getData();
-    if(saved){
-      renderMain(saved);
-      go('main');
-    }else{
-      go('title');
-    }
-    // 強化画面へ入るたびに描画するようにフック
-    document.querySelector('button.primary[onclick="go(\'upgrade\')"]')?.addEventListener('click', ()=>{
-      pending = {}; // リセット
-      renderUpgrade();
-    });
+    if(saved){ renderMain(saved); go('main'); }
+    else{ go('title'); }
   })();
 
-  // リセット
+  /* リセット */
   function resetAll(){
     if(confirm('本当に最初からやり直しますか？')){
       localStorage.removeItem(KEY);
+      localStorage.removeItem(LOG_KEY);
       chosenChar = null;
       document.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
       document.getElementById('playerName').value = '';
